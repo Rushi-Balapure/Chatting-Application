@@ -16,6 +16,8 @@ import java.util.*;
 import java.text.*;
 import java.net.*;
 import java.io.*;
+import javax.crypto.Cipher;
+import javax.crypto.spec.SecretKeySpec;
 public class Server  implements ActionListener{
     
     JTextField input_field;
@@ -52,14 +54,25 @@ public class Server  implements ActionListener{
         JLabel profile=new JLabel(profile3);
         profile.setBounds(40,10,50,50);
         panel_top.add(profile);
-        
+        profile.addMouseListener(new MouseAdapter(){
+            public void mouseClicked(MouseEvent ae)
+            {
+                JOptionPane.showMessageDialog(f, "Profile picture can't be changed");
+            }
+        });
+
         ImageIcon video1=new ImageIcon(ClassLoader.getSystemResource("icons/video.png"));
         Image video2=video1.getImage().getScaledInstance(30, 30, Image.SCALE_DEFAULT);
         ImageIcon video3=new ImageIcon(video2);
         JLabel video=new JLabel(video3);
         video.setBounds(300,20,30,30);
         panel_top.add(video);
-        
+        video.addMouseListener(new MouseAdapter(){
+            public void mouseClicked(MouseEvent ae)
+            {
+                JOptionPane.showMessageDialog(f, "Video Call feature still in development");
+            }
+        });
         
         ImageIcon phone1=new ImageIcon(ClassLoader.getSystemResource("icons/phone.png"));
         Image phone2=phone1.getImage().getScaledInstance(35, 30, Image.SCALE_DEFAULT);
@@ -67,7 +80,13 @@ public class Server  implements ActionListener{
         JLabel phone=new JLabel(phone3);
         phone.setBounds(360,20,30,30);
         panel_top.add(phone);
-       
+        phone.addMouseListener(new MouseAdapter(){
+            public void mouseClicked(MouseEvent ae)
+            {
+                JOptionPane.showMessageDialog(f, "Voice Call feature still in development");
+            }
+        });
+
         ImageIcon more1=new ImageIcon(ClassLoader.getSystemResource("icons/3icon.png"));
         Image more2=more1.getImage().getScaledInstance(10, 25, Image.SCALE_DEFAULT);
         ImageIcon more3=new ImageIcon(more2);
@@ -125,7 +144,7 @@ public class Server  implements ActionListener{
         panel_mid.add(vertical,BorderLayout.PAGE_START);
         
         
-        dout.writeUTF(text_input);
+        dout.writeUTF(encrypt(text_input));
         input_field.setText("");
         f.repaint();
         f.invalidate();
@@ -136,7 +155,41 @@ public class Server  implements ActionListener{
         e.printStackTrace();
     }
     }
-    
+    public static String encrypt(String msg)
+    {
+        String key = "1234567890123456"; // Must be 16 characters for 128-bit AES
+        SecretKeySpec secretKey = new SecretKeySpec(key.getBytes(), "AES");
+       String ciphertext="";
+        try{
+        Cipher cipher=Cipher.getInstance("AES");
+        cipher.init(Cipher.ENCRYPT_MODE, secretKey);
+        byte[] encryptedBytes = cipher.doFinal(msg.getBytes());
+        ciphertext = Base64.getEncoder().encodeToString(encryptedBytes);
+       }
+       catch(Exception e)
+       {
+        e.printStackTrace();
+       }
+        return ciphertext;
+
+    }
+    public static String decrypt(String ciphertext)
+    {
+        String key = "1234567890123456"; // Must be 16 characters for 128-bit AES
+        SecretKeySpec secretKey = new SecretKeySpec(key.getBytes(), "AES");
+        String plaintext="";
+        try{
+            Cipher cipher=Cipher.getInstance("AES");
+            cipher.init(Cipher.DECRYPT_MODE, secretKey);
+            byte[] decryptedBytes = cipher.doFinal(Base64.getDecoder().decode(ciphertext));
+            plaintext = new String(decryptedBytes);
+        }
+        catch(Exception e)
+        {
+            e.printStackTrace();
+        }
+        return plaintext;
+    }
     public static JPanel formatLabel(String output)
     {
         JPanel panel=new JPanel();
@@ -171,7 +224,7 @@ public class Server  implements ActionListener{
                 
                 while(true)
                 {
-                    String msg=din.readUTF();
+                    String msg=decrypt(din.readUTF());
                     JPanel npanel=formatLabel(msg);
                     JPanel left=new JPanel(new BorderLayout());
                     left.add(npanel,BorderLayout.LINE_START);
